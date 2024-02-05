@@ -43,8 +43,6 @@ jobs:
             reviewers: pradeep-palagiri,
           });
           console.log(result);
-        env:
-          GITHUB_TOKEN: name: Approval
 
 on:
   pull_request:
