@@ -1,64 +1,95 @@
-name: CICD (Dev, Staging, Prod)
+name: Deploy to Stage
 
 on:
   push:
     branches:
-      - main
-    paths-ignore:
-      - .gitignore
-      - LICENSE
-      - README.md
-  
-  workflow_dispatch:
-
-defaults:
-  run:
-    shell: pwsh
+      - dev
 
 jobs:
-  
-  build:
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-
-
-  dev-deploy:
-    needs: [build, unit-test]
-    uses: ./.github/workflows/deploy-environment.yml
-    with:
-      environment: dev
-    secrets: inherit
-
-  staging-approval-gate:
-    needs: dev-deploy
-    environment: staging
+  deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: approved
-        env: 
-          ENV_NAME: Staging
-        run: write-host "Approve for $($env.ENV_NAME)"
-    
-  staging-deploy:
-    needs: staging-approval-gate
-    uses: ./.github/workflows/deploy-environment.yml
-    with:
-      environment: staging
-    secrets: inherit
 
-  prod-approval-gate:
-    needs: staging-deploy
-    environment: prod
-    runs-on: ubuntu-latest
     steps:
-      - name: approved
-        env: 
-          ENV_NAME: prod
-        run: write-host "Approve for $($env.ENV_NAME)"
-    
-  prod-deploy:
-    needs: prod-approval-gate
-    uses: ./.github/workflows/deploy-environment.yml
-    with:
-      environment: prod
-    secrets: inherit
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to Stage
+      run: |
+        # Your deployment script or commands here
+        echo "Deploying to Stage..."
+      env:
+        GITHUB_TOKEN: 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
+
+        name: Approval
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  approval:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Request Approval
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const result = await github.pulls.createReviewRequest({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.pull_request.number,
+            reviewers: pradeep-palagiri,
+          });
+          console.log(result);
+        env:
+          GITHUB_TOKEN: name: Approval
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  approval:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Request Approval
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const result = await github.pulls.createReviewRequest({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.pull_request.number,
+            reviewers: pradeep-palagiri,
+          });
+          console.log(result);
+        env:
+          GITHUB_TOKEN: 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
+
+          name: Deploy to Stage
+
+on:
+  workflow_run:
+    workflows: ["Approval"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to Stage
+      run: |
+        # Your deployment script or commands here
+        echo "Deploying to Stage..."
+      env:
+        GITHUB_TOKEN: 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
