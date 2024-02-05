@@ -27,7 +27,7 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          const { data } = await github.pulls.createReviewRequest({
+          #const { data } = await github.pulls.createReviewRequest({
             owner: context.repo.owner,
             repo: context.repo.repo,
             pull_number: context.payload.pull_request.number,
