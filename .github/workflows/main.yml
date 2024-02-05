@@ -31,7 +31,7 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             pull_number: context.payload.pull_request.number,
-            reviewers: ['priyanka-sahu123']
+            reviewers: ['Priyanka.sahu803@gmail,com']
           });
 
     - name: Wait for Approval
