@@ -1,93 +1,69 @@
-name: Deploy to Stage
+name: Node.js CI/CD
 
 on:
   push:
     branches:
-      - dev
+      - main
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Deploy to Stage
-      run: |
-        # Your deployment script or commands here
-        echo "Deploying to Stage..."
-      env:
-        GITHUB_TOKEN: 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
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'
 
-        name: Approval
+    - name: Install Dependencies
+      run: npm install
 
-on:
-  pull_request:
-    types:
-      - opened
+    - name: Run Tests (if applicable)
+      run: npm test
 
-jobs:
-  approval:
+  review:
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
     - name: Request Approval
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       with:
         script: |
-          const result = await github.pulls.createReviewRequest({
+          const { data } = await github.pulls.createReviewRequest({
             owner: context.repo.owner,
             repo: context.repo.repo,
             pull_number: context.payload.pull_request.number,
-            reviewers: pradeep-palagiri,
+            reviewers: ['pradeep-palagiri']
           });
-          console.log(result);
 
-on:
-  pull_request:
-    types:
-      - opened
-
-jobs:
-  approval:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Request Approval
-      uses: actions/github-script@v5
+    - name: Wait for Approval
+      uses: actions/github-script@v6
       with:
         script: |
-          const result = await github.pulls.createReviewRequest({
+          const { data } = await github.pulls.get({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            pull_number: context.payload.pull_request.number,
-            reviewers: pradeep-palagiri,
+            pull_number: context.payload.pull_request.number
           });
-          console.log(result);
-        env:
-          GITHUB_TOKEN: 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
+          
+          if (data.reviews.some(review => review.state === 'APPROVED')) {
+            console.log('Approved!');
+          } else {
+            console.log('Waiting for approval...');
+            process.exit(1);
+          }
 
-          name: Deploy to Stage
-
-on:
-  workflow_run:
-    workflows: ["Approval"]
-    types:
-      - completed
-
-jobs:
   deploy:
-    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    needs: review
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Deploy to Stage
+    - name: Deploy to Stage/QA/Prod
       run: |
-        # Your deployment script or commands here
-        echo "Deploying to Stage..."
-      env:
-        GITHUB_TOKEN: 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
+        # Add deployment scripts here
+        # e.g., deploying to a staging server
+        echo "Deploying to Staging..."
